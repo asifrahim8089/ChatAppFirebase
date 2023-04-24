@@ -1,7 +1,13 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:async';
 
+import 'package:chat_app/Screens/chat_list.dart';
+import 'package:chat_app/Screens/chat_screen.dart';
 import 'package:chat_app/Screens/login_home.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -20,12 +26,36 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future navigationPage() async {
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        transitionDuration: const Duration(seconds: 3),
-        pageBuilder: (_, __, ___) => const LoginHome(),
-      ),
-    );
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (prefs.containsKey('email') && prefs.containsKey('password')) {
+      // Register the onMessageOpenedApp callback function
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        // Navigate to the chat screen and pass the notification message as a parameter
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                ChatScreen(notificationmessage: message.notification?.body),
+          ),
+        );
+      });
+      // The shared preferences are present, so the user is logged in.
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          transitionDuration: const Duration(seconds: 3),
+          pageBuilder: (_, __, ___) => const ChatList(),
+        ),
+      );
+    } else {
+      // The shared preferences are not present, so the user is not logged in.
+
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          transitionDuration: const Duration(seconds: 3),
+          pageBuilder: (_, __, ___) => const LoginHome(),
+        ),
+      );
+    }
   }
 
   @override

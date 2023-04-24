@@ -1,7 +1,11 @@
-// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
+// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables, use_build_context_synchronously
 
 import 'package:chat_app/Screens/chat_screen.dart';
+import 'package:chat_app/Screens/login_home.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ChatList extends StatefulWidget {
   const ChatList({super.key});
@@ -12,12 +16,44 @@ class ChatList extends StatefulWidget {
 
 class _ChatListState extends State<ChatList> {
   @override
+  void initState() {
+    init();
+    super.initState();
+  }
+
+  void init() async {
+    // final firestoreInstance = FirebaseFirestore.instance;
+    // SharedPreferences prefs = await SharedPreferences.getInstance();
+    // String? recipientEmail = prefs.getString('email');
+    // print(recipientEmail);
+    // if (recipientEmail != null) {
+    //   DocumentSnapshot recipientDoc =
+    //       await firestoreInstance.collection('users').doc(recipientEmail).get();
+    //   print(recipientDoc.data());
+    //   if (recipientDoc.exists) {
+    //     // Retrieve the device token from the recipient's document
+    //     // String? recipientDeviceToken =
+    //     //     (recipientDoc.data() as Map<String, dynamic>?)
+    //     //                 ?.containsKey('device_token') ==
+    //     //             true
+    //     //         ? recipientDoc.data()!['device_token'] as String
+    //     //         : null;
+    //     // Use the recipient's device token to send a message via Firebase Cloud Messaging
+    //   } else {
+    //     // Handle the case where the recipient's document does not exist
+    //   }
+    // } else {
+    //   // Handle the case where the recipient's email is not stored in shared preferences
+    // }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.red,
-        automaticallyImplyLeading: true,
+        automaticallyImplyLeading: false,
         centerTitle: true,
         title: const Text(
           "Chats",
@@ -26,6 +62,25 @@ class _ChatListState extends State<ChatList> {
             fontSize: 20,
           ),
         ),
+        actions: [
+          IconButton(
+              onPressed: () async {
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                prefs.remove('email');
+                prefs.remove('password');
+                await FirebaseAuth.instance.signOut();
+                Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LoginHome(),
+                    ),
+                    (route) => false);
+              },
+              icon: Icon(
+                Icons.logout,
+                color: Colors.white,
+              ))
+        ],
       ),
       body: ListView.builder(
         shrinkWrap: true,

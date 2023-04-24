@@ -1,20 +1,15 @@
-// ignore_for_file: prefer_const_constructors, depend_on_referenced_packages, unused_local_variable, unused_import, unused_element, avoid_print
+// ignore_for_file: prefer_const_constructors, depend_on_referenced_packages, unused_local_variable, unused_element, avoid_print, use_build_context_synchronously
 
 import 'dart:io';
-
 import 'package:chat_app/Screens/player.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../Model/message_model.dart';
 import '../Providers/message_provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter_sound_lite/flutter_sound.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+  final String? notificationmessage;
+  const ChatScreen({super.key, this.notificationmessage});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -22,86 +17,6 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final _textController = TextEditingController();
-  FlutterSoundRecorder? _recorder;
-  FlutterSoundPlayer? _player;
-  Future<void> _sendMessage(Message message) async {
-    try {
-      // send the message to the server
-      final docRef =
-          await FirebaseFirestore.instance.collection('messages').add({
-        'type': message.type,
-        'content': message.data,
-        'timestamp': message.timestamp.toIso8601String(),
-      });
-      // send a notification to the user
-      final token = await FirebaseMessaging.instance.getToken();
-    } catch (error) {
-      // handle the error
-      print('Error sending message: $error');
-      // show a user-friendly message to the user
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Error'),
-          content: Text('Failed to send message. Please try again later.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('OK'),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
-  Future<void> _pickImage(context) async {
-    try {
-      final provider = Provider.of<MessageProvider>(context, listen: false);
-      final pickedFile =
-          await ImagePicker().pickImage(source: ImageSource.gallery);
-      if (pickedFile != null) {
-        final message = Message(
-          type: 'image',
-          data: pickedFile.path,
-          timestamp: DateTime.now(),
-        );
-        provider.addMessage(message);
-        _sendMessage(message);
-      }
-    } catch (e) {
-      print('Error picking image: $e');
-    }
-  }
-
-  Future<void> _startRecording() async {
-    _recorder = FlutterSoundRecorder();
-    await _recorder?.openAudioSession();
-    await _recorder?.startRecorder(toFile: 'example.mp4');
-    _player = FlutterSoundPlayer();
-  }
-
-  Future<void> _stopRecording(BuildContext context) async {
-    final provider = Provider.of<MessageProvider>(context, listen: false);
-    final path = await _recorder?.stopRecorder();
-    await _recorder?.closeAudioSession();
-
-    final message = Message(
-      data: path,
-      type: 'audio',
-      timestamp: DateTime.now(),
-    );
-    provider.addMessage(message);
-    _sendMessage(message);
-  }
-
-  Future<void> _playRecording(String path) async {
-    await _player?.startPlayer(fromURI: path);
-  }
-
-  Future<void> _stopPlaying() async {
-    await _player?.stopPlayer();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -194,7 +109,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                           padding: EdgeInsets.symmetric(
                                               vertical: 2, horizontal: 0),
                                           child: Text(
-                                            message.data.toString(),
+                                            widget.notificationmessage ??
+                                                message.data.toString(),
                                             style: TextStyle(
                                               color: Colors.white,
                                             ),
@@ -312,7 +228,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       child: Center(
                         child: IconButton(
                           onPressed: () {
-                            _pickImage(context);
+                            provider.pickImage(context);
                           },
                           icon: Icon(
                             Icons.image,
@@ -322,30 +238,30 @@ class _ChatScreenState extends State<ChatScreen> {
                         ),
                       ),
                     ),
-                    Container(
-                      margin: EdgeInsets.only(left: 16),
-                      width: 38,
-                      height: 38,
-                      padding: EdgeInsets.only(left: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withAlpha(40),
-                        borderRadius: BorderRadius.all(
-                          Radius.circular(10),
-                        ),
-                      ),
-                      child: Center(
-                        child: IconButton(
-                          onPressed: () {
-                            _startRecording();
-                          },
-                          icon: Icon(
-                            Icons.keyboard_voice,
-                            color: Colors.black,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                    ),
+                    // Container(
+                    //   margin: EdgeInsets.only(left: 16),
+                    //   width: 38,
+                    //   height: 38,
+                    //   padding: EdgeInsets.only(left: 4),
+                    //   decoration: BoxDecoration(
+                    //     color: Colors.red.withAlpha(40),
+                    //     borderRadius: BorderRadius.all(
+                    //       Radius.circular(10),
+                    //     ),
+                    //   ),
+                    //   child: Center(
+                    //     child: IconButton(
+                    //       onPressed: () {
+                    //         provider.startRecording();
+                    //       },
+                    //       icon: Icon(
+                    //         Icons.keyboard_voice,
+                    //         color: Colors.black,
+                    //         size: 18,
+                    //       ),
+                    //     ),
+                    //   ),
+                    // ),
                     GestureDetector(
                       onTap: () {
                         final text = _textController.text;
@@ -356,7 +272,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             timestamp: DateTime.now(),
                           );
                           provider.addMessage(message);
-                          _sendMessage(message);
+                          provider.sendMessage(message);
                           _textController.clear();
                         }
                       },
